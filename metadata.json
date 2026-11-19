@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "MoneyMate",
+  "description": "Make your allowance last the whole month. A calm student money companion showing your daily safe-to-spend amount.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

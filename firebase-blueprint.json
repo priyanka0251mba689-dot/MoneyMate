@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Student user profile and onboarding status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 160 },
+        "college": { "type": "string", "maxLength": 140 },
+        "year": { "type": "string", "enum": ["1st Year", "2nd Year", "3rd Year", "4th Year", "PG / Other"] },
+        "stayType": { "type": "string", "enum": ["Hostel", "PG", "Shared Flat"] },
+        "onboardingCompleted": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "onboardingCompleted"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Monthly allowance, cycle dates, and fixed costs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "allowance": { "type": "number" },
+        "cycleStartDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "nextAllowanceDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "fixedCosts": { "type": "array", "description": "Up to 25 fixed cost items" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "allowance", "cycleStartDate", "nextAllowanceDate", "fixedCosts"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Daily student expense entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "amount": { "type": "number" },
+        "category": {
+          "type": "string",
+          "enum": ["Food & delivery", "Travel", "Subscriptions", "Shopping", "Social outings", "Academics", "Other"]
+        },
+        "paymentMode": { "type": "string", "enum": ["UPI", "Cash", "Card"] },
+        "note": { "type": "string", "maxLength": 140 },
+        "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "category", "paymentMode", "date"]
+    },
+    "AlertSettings": {
+      "title": "AlertSettings",
+      "description": "Overspend alert and daily reminder preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "overspendAlertsEnabled": { "type": "boolean" },
+        "dailyReminderEnabled": { "type": "boolean" },
+        "dailyReminderTime": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+        "browserNotificationsEnabled": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "overspendAlertsEnabled", "dailyReminderEnabled", "dailyReminderTime"]
+    },
+    "WeeklyCheckin": {
+      "title": "WeeklyCheckin",
+      "description": "Weekly pilot research check-in answer and summary",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "weekKey": { "type": "string", "maxLength": 32 },
+        "totalSpent": { "type": "number" },
+        "topCategory": { "type": "string", "maxLength": 64 },
+        "daysOnTrack": { "type": "number" },
+        "changedSpendingChoice": { "type": "string", "enum": ["Yes", "No", "Not sure"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "weekKey", "totalSpent", "topCategory", "daysOnTrack", "changedSpendingChoice"]
+    },
+    "AnalyticsEvent": {
+      "title": "AnalyticsEvent",
+      "description": "Light pilot analytics event",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "eventName": {
+          "type": "string",
+          "enum": ["onboarding_completed", "expense_added", "home_opened", "alert_opened", "weekly_checkin_answered"]
+        },
+        "weekKey": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "eventName", "weekKey"]
+    },
+    "WaitlistEntry": {
+      "title": "WaitlistEntry",
+      "description": "Early-access waitlist and Rs 49 pre-commitment response",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "contact": { "type": "string", "maxLength": 160 },
+        "college": { "type": "string", "maxLength": 140 },
+        "year": { "type": "string", "enum": ["1st Year", "2nd Year", "3rd Year", "4th Year", "PG / Other"] },
+        "stayType": { "type": "string", "enum": ["Hostel", "PG", "Shared Flat"] },
+        "preCommit49": { "type": "string", "enum": ["Pending", "Yes", "No", "Maybe"] },
+        "preCommitObjection": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "contact", "college", "year", "stayType", "preCommit49"]
+    },
+    "PilotSummary": {
+      "title": "PilotSummary",
+      "description": "Aggregated pilot participation summary for admin CSV export",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "college": { "type": "string", "maxLength": 140 },
+        "stayType": { "type": "string", "maxLength": 40 },
+        "week4Active": { "type": "boolean" },
+        "weeklyActionsCount": { "type": "number" },
+        "activeWeeksCount": { "type": "number" },
+        "lastCheckinAnswer": { "type": "string", "enum": ["None", "Yes", "No", "Not sure"] },
+        "preCommit49": { "type": "string", "enum": ["Pending", "Yes", "No", "Maybe"] },
+        "preCommitObjection": { "type": "string", "maxLength": 300 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "week4Active", "weeklyActionsCount", "activeWeeksCount", "lastCheckinAnswer", "preCommit49"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document"
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": { "$ref": "#/entities/Budget" },
+      "description": "Student monthly allowance and fixed costs"
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Student expense entries"
+    },
+    "/users/{userId}/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AlertSettings" },
+      "description": "Alert and reminder preferences"
+    },
+    "/users/{userId}/checkins/{checkinId}": {
+      "schema": { "$ref": "#/entities/WeeklyCheckin" },
+      "description": "Weekly check-in responses"
+    },
+    "/users/{userId}/events/{eventId}": {
+      "schema": { "$ref": "#/entities/AnalyticsEvent" },
+      "description": "Light pilot analytics events"
+    },
+    "/waitlist/{entryId}": {
+      "schema": { "$ref": "#/entities/WaitlistEntry" },
+      "description": "Early-access waitlist and Rs 49 pre-commitment entries"
+    },
+    "/pilotMetrics/{userId}": {
+      "schema": { "$ref": "#/entities/PilotSummary" },
+      "description": "Pilot cohort activity summary for admin research export"
+    }
+  }
+}

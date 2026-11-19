@@ -1,0 +1,242 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'priyanka.0251mba689@dgu.ac.in';
+    }
+
+    function isIsoDate(val) {
+      return val is string && val.size() == 10 && val.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'name', 'onboardingCompleted'])
+        && data.keys().hasOnly(['uid', 'name', 'email', 'college', 'year', 'stayType', 'onboardingCompleted', 'createdAt', 'updatedAt'])
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.onboardingCompleted is bool
+        && (!('email' in data) || (data.email is string && data.email.size() <= 160))
+        && (!('college' in data) || (data.college is string && data.college.size() <= 140))
+        && (!('year' in data) || data.year in ['1st Year', '2nd Year', '3rd Year', '4th Year', 'PG / Other'])
+        && (!('stayType' in data) || data.stayType in ['Hostel', 'PG', 'Shared Flat'])
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    function isValidBudget(data, userId) {
+      return data.keys().hasAll(['userId', 'allowance', 'cycleStartDate', 'nextAllowanceDate', 'fixedCosts'])
+        && data.keys().hasOnly(['userId', 'allowance', 'cycleStartDate', 'nextAllowanceDate', 'fixedCosts', 'updatedAt'])
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.allowance is number && data.allowance >= 0 && data.allowance <= 10000000
+        && isIsoDate(data.cycleStartDate)
+        && isIsoDate(data.nextAllowanceDate)
+        && data.fixedCosts is list && data.fixedCosts.size() <= 25
+        && (data.fixedCosts.size() == 0 || (data.fixedCosts[0] is map && data.fixedCosts[0].label is string && data.fixedCosts[0].amount is number))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    function isValidExpense(data, userId) {
+      return data.keys().hasAll(['userId', 'amount', 'category', 'paymentMode', 'date'])
+        && data.keys().hasOnly(['id', 'userId', 'amount', 'category', 'paymentMode', 'note', 'date', 'createdAt', 'updatedAt'])
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && (!('id' in data) || isValidId(data.id))
+        && data.amount is number && data.amount > 0 && data.amount <= 1000000
+        && data.category in ['Food & delivery', 'Travel', 'Subscriptions', 'Shopping', 'Social outings', 'Academics', 'Other']
+        && data.paymentMode in ['UPI', 'Cash', 'Card']
+        && (!('note' in data) || (data.note is string && data.note.size() <= 140))
+        && isIsoDate(data.date)
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    function isValidAlertSettings(data, userId) {
+      return data.keys().hasAll(['userId', 'overspendAlertsEnabled', 'dailyReminderEnabled', 'dailyReminderTime'])
+        && data.keys().hasOnly(['userId', 'overspendAlertsEnabled', 'dailyReminderEnabled', 'dailyReminderTime', 'browserNotificationsEnabled', 'updatedAt'])
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.overspendAlertsEnabled is bool
+        && data.dailyReminderEnabled is bool
+        && data.dailyReminderTime is string && data.dailyReminderTime.size() == 5 && data.dailyReminderTime.matches('^\\d{2}:\\d{2}$')
+        && (!('browserNotificationsEnabled' in data) || data.browserNotificationsEnabled is bool)
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    function isValidWeeklyCheckin(data, userId) {
+      return data.keys().hasAll(['userId', 'weekKey', 'totalSpent', 'topCategory', 'daysOnTrack', 'changedSpendingChoice'])
+        && data.keys().hasOnly(['userId', 'weekKey', 'totalSpent', 'topCategory', 'daysOnTrack', 'changedSpendingChoice', 'createdAt'])
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.weekKey is string && data.weekKey.size() >= 4 && data.weekKey.size() <= 32
+        && data.totalSpent is number && data.totalSpent >= 0 && data.totalSpent <= 10000000
+        && data.topCategory is string && data.topCategory.size() >= 1 && data.topCategory.size() <= 64
+        && data.daysOnTrack is number && data.daysOnTrack >= 0 && data.daysOnTrack <= 7
+        && data.changedSpendingChoice in ['Yes', 'No', 'Not sure']
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40));
+    }
+
+    function isValidAnalyticsEvent(data, userId) {
+      return data.keys().hasAll(['userId', 'eventName', 'weekKey'])
+        && data.keys().hasOnly(['userId', 'eventName', 'weekKey', 'createdAt'])
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.eventName in ['onboarding_completed', 'expense_added', 'home_opened', 'alert_opened', 'weekly_checkin_answered']
+        && data.weekKey is string && data.weekKey.size() >= 4 && data.weekKey.size() <= 32
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40));
+    }
+
+    function isValidWaitlistEntry(data) {
+      return data.keys().hasAll(['userId', 'name', 'contact', 'college', 'year', 'stayType', 'preCommit49'])
+        && data.keys().hasOnly(['userId', 'name', 'contact', 'college', 'year', 'stayType', 'preCommit49', 'preCommitObjection', 'createdAt', 'updatedAt'])
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.contact is string && data.contact.size() >= 3 && data.contact.size() <= 160
+        && data.college is string && data.college.size() >= 2 && data.college.size() <= 140
+        && data.year in ['1st Year', '2nd Year', '3rd Year', '4th Year', 'PG / Other']
+        && data.stayType in ['Hostel', 'PG', 'Shared Flat']
+        && data.preCommit49 in ['Pending', 'Yes', 'No', 'Maybe']
+        && (!('preCommitObjection' in data) || (data.preCommitObjection is string && data.preCommitObjection.size() <= 300))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 40))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    function isValidPilotSummary(data, userId) {
+      return data.keys().hasAll(['userId', 'displayName', 'week4Active', 'weeklyActionsCount', 'activeWeeksCount', 'lastCheckinAnswer', 'preCommit49'])
+        && data.keys().hasOnly(['userId', 'displayName', 'college', 'stayType', 'week4Active', 'weeklyActionsCount', 'activeWeeksCount', 'lastCheckinAnswer', 'preCommit49', 'preCommitObjection', 'updatedAt'])
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && (!('college' in data) || (data.college is string && data.college.size() <= 140))
+        && (!('stayType' in data) || (data.stayType is string && data.stayType.size() <= 40))
+        && data.week4Active is bool
+        && data.weeklyActionsCount is number && data.weeklyActionsCount >= 0 && data.weeklyActionsCount <= 10000
+        && data.activeWeeksCount is number && data.activeWeeksCount >= 0 && data.activeWeeksCount <= 52
+        && data.lastCheckinAnswer in ['None', 'Yes', 'No', 'Not sure']
+        && data.preCommit49 in ['Pending', 'Yes', 'No', 'Maybe']
+        && (!('preCommitObjection' in data) || (data.preCommitObjection is string && data.preCommitObjection.size() <= 300))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'college', 'year', 'stayType', 'onboardingCompleted', 'updatedAt']);
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      match /budgets/{budgetId} {
+        allow get: if isValidId(userId) && isValidId(budgetId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(budgetId) && isOwner(userId) && isValidBudget(incoming(), userId);
+        allow update: if isValidId(userId) && isValidId(budgetId)
+          && isOwner(userId)
+          && isValidBudget(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().diff(existing()).affectedKeys().hasOnly(['allowance', 'cycleStartDate', 'nextAllowanceDate', 'fixedCosts', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(budgetId) && isOwner(userId);
+      }
+
+      match /expenses/{expenseId} {
+        allow get: if isValidId(userId) && isValidId(expenseId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(expenseId) && isOwner(userId) && isValidExpense(incoming(), userId);
+        allow update: if isValidId(userId) && isValidId(expenseId)
+          && isOwner(userId)
+          && isValidExpense(incoming(), userId)
+          && incoming().userId == existing().userId
+          && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt)
+          && incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'category', 'paymentMode', 'note', 'date', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(expenseId) && isOwner(userId);
+      }
+
+      match /settings/{settingId} {
+        allow get: if isValidId(userId) && isValidId(settingId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(settingId) && isOwner(userId) && isValidAlertSettings(incoming(), userId);
+        allow update: if isValidId(userId) && isValidId(settingId)
+          && isOwner(userId)
+          && isValidAlertSettings(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().diff(existing()).affectedKeys().hasOnly(['overspendAlertsEnabled', 'dailyReminderEnabled', 'dailyReminderTime', 'browserNotificationsEnabled', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(settingId) && isOwner(userId);
+      }
+
+      match /checkins/{checkinId} {
+        allow get: if isValidId(userId) && isValidId(checkinId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(checkinId) && isOwner(userId) && isValidWeeklyCheckin(incoming(), userId);
+        allow update: if isValidId(userId) && isValidId(checkinId)
+          && isOwner(userId)
+          && isValidWeeklyCheckin(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().weekKey == existing().weekKey
+          && incoming().diff(existing()).affectedKeys().hasOnly(['totalSpent', 'topCategory', 'daysOnTrack', 'changedSpendingChoice']);
+        allow delete: if isValidId(userId) && isValidId(checkinId) && isOwner(userId);
+      }
+
+      match /events/{eventId} {
+        allow get: if isValidId(userId) && isValidId(eventId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(eventId) && isOwner(userId) && isValidAnalyticsEvent(incoming(), userId);
+        allow delete: if isValidId(userId) && isValidId(eventId) && isOwner(userId);
+      }
+    }
+
+    match /waitlist/{entryId} {
+      allow get: if isValidId(entryId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isValidId(entryId) && isSignedIn() && isValidWaitlistEntry(incoming());
+      allow update: if isValidId(entryId)
+        && isSignedIn()
+        && existing().userId == request.auth.uid
+        && isValidWaitlistEntry(incoming())
+        && incoming().userId == existing().userId
+        && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['preCommit49', 'preCommitObjection', 'updatedAt']);
+      allow delete: if isValidId(entryId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+    }
+
+    match /pilotMetrics/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) && isOwner(userId) && isValidPilotSummary(incoming(), userId);
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidPilotSummary(incoming(), userId)
+        && incoming().userId == existing().userId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'college', 'stayType', 'week4Active', 'weeklyActionsCount', 'activeWeeksCount', 'lastCheckinAnswer', 'preCommit49', 'preCommitObjection', 'updatedAt']);
+      allow delete: if isValidId(userId) && isOwner(userId);
+    }
+  }
+}
